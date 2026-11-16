@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lead Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <div class="brand"><span class="dot"></span>Lead Finder</div>
+    <h1>Find local<br>businesses.<br>Get their contacts.</h1>
+
+    <form id="form" autocomplete="off">
+      <label for="keyword">Business type</label>
+      <input id="keyword" placeholder="dentists, restaurants, gyms…" required list="ideas">
+      <datalist id="ideas">
+        <option>dentist</option><option>restaurant</option><option>hotel</option><option>gym</option>
+        <option>salon</option><option>pharmacy</option><option>school</option><option>lawyer</option>
+        <option>real estate</option><option>car repair</option><option>cafe</option><option>clinic</option>
+      </datalist>
+
+      <label for="location">Location</label>
+      <input id="location" placeholder="Lahore, Islamabad, New York…" required>
+
+      <label for="limit">How many leads</label>
+      <select id="limit">
+        <option value="25">25</option><option value="50" selected>50</option>
+        <option value="100">100</option><option value="200">200</option>
+      </select>
+
+      <label class="check"><input type="checkbox" id="emails" checked><span>Find emails from websites</span></label>
+      <label class="check"><input type="checkbox" id="ai"><span>Use AI for unusual keywords <small id="aiNote"></small></span></label>
+
+      <label class="check"><input type="checkbox" id="gmaps"><span>Use Google Maps scraper <small>(no key, slower)</small></span></label>
+
+      <button id="go" type="submit">Find leads</button>
+    </form>
+    <p class="foot" id="foot">Data from OpenStreetMap and Google Places (if key is set).</p>
+  </aside>
+
+  <main class="results">
+    <header class="bar">
+      <div>
+        <div class="count" id="count">No leads yet</div>
+        <div class="sub" id="sub">Run a search to see results here.</div>
+      </div>
+      <div class="actions">
+        <label class="check mini"><input type="checkbox" id="onlyContact"><span>Only with phone or email</span></label>
+        <button id="download" class="dl" disabled>Download Excel</button>
+      </div>
+    </header>
+
+    <div id="msg" class="msg" hidden></div>
+
+    <div class="wrap">
+      <table id="table" hidden>
+        <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Website</th><th>Address</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="empty" class="empty">
+        <p>Try “dentists” in “Lahore”.</p>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
