@@ -16,6 +16,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
 load_dotenv()
+ON_RENDER = bool(os.getenv("RENDER"))  # Render sets this automatically
 app = Flask(__name__, static_folder="static", static_url_path="")
 
 UA = {"User-Agent": "LeadFinder/1.0 (free personal lead tool)"}
@@ -201,7 +202,7 @@ def google_search(keyword, location, limit):
                f"top rated {keyword} in {location}", f"{keyword} near {location} city center"]
     headers = {
         "X-Goog-Api-Key": key, "Content-Type": "application/json",
-        "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.nationalPhoneNumber,"
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,"
                             "places.internationalPhoneNumber,places.websiteUri,places.googleMapsUri,nextPageToken",
     }
     out, seen = [], set()
@@ -349,7 +350,7 @@ def index():
 
 @app.get("/api/status")
 def status():
-    return jsonify(ai=bool(os.getenv("OPENROUTER_API_KEY", "").strip()), google=bool(os.getenv("GOOGLE_API_KEY", "").strip()))
+    return jsonify(ai=bool(os.getenv("OPENROUTER_API_KEY", "").strip()), google=bool(os.getenv("GOOGLE_API_KEY", "").strip()), gmaps=not ON_RENDER)
 
 
 @app.post("/api/search")
@@ -391,18 +392,28 @@ def search():
             seen.add(key)
             leads.append(lead)
 
-        sources, warning = (["OpenStreetMap"] if not osm_error else []), osm_error
-        g_leads, warning = google_search(keyword, location, limit)
+        sources = ["OpenStreetMap"] if not osm_error else []
+        warnings = [osm_error] if osm_error else []
+
+        g_leads, g_warn = google_search(keyword, location, limit)
         src = "Google Places"
+        if g_warn:
+            warnings.append(g_warn)
         if not g_leads and d.get("gmaps"):
-            g_leads, w2 = gmaps_scrape(keyword, location, limit)
-            src, warning = "Google Maps", w2
+            if ON_RENDER:
+                warnings.append("The Google Maps scraper is disabled on this server. "
+                                "Run Lead Finder on your own computer to use it.")
+            else:
+                g_leads, w2 = gmaps_scrape(keyword, location, limit)
+                src = "Google Maps"
+                if w2:
+                    warnings.append(w2)
         if g_leads:
             leads = merge(g_leads, leads)
             sources.insert(0, src)
-            warning = None
-        if not leads and warning:
-            return jsonify(error=warning), 503
+        if not leads and warnings:
+            return jsonify(error=" ".join(warnings)), 503
+        warning = None if g_leads else (" ".join(warnings) or None)
 
         # richest leads first, then cut to limit
         score = lambda l: sum(bool(l[k]) for k in ("phone", "email", "website", "address"))
@@ -451,4 +462,5 @@ def export():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    port = int(os.getenv("PORT", "5000"))
+    app.run(host="0.0.0.0" if ON_RENDER else "127.0.0.1", port=port, debug=False)
